@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ColorHub</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <h1>ColorHub</h1>
+
+  <div class="card card-wide">
+    <h2>Built-in themes</h2>
+    <p class="card-hint">Each theme shows semantic colors and chart palette swatches.</p>
+    <div id="dashboard-themes-gallery" class="dashboard-themes-gallery"></div>
+  </div>
+
+  <div class="card">
+    <h2>Colors by key (same key always gets the same color)</h2>
+    <div id="series-colors"></div>
+    <p class="card-hint">
+      getColors('Series A') etc. return default / hover / active / disabled state colors.
+    </p>
+  </div>
+
+  <div class="card" id="exhaustion-demo">
+    <h2>Empty palette: golden vs perceptual</h2>
+    <p class="card-hint">
+      No <code>palette</code> — each new series uses <code>paletteExhaustion</code>:
+      <strong>golden</strong> (default) vs <strong>perceptual</strong> (CIELAB ΔE76 vs already-assigned colors).
+    </p>
+    <div class="exhaustion-grid">
+      <div class="exhaustion-col">
+        <h3>golden</h3>
+        <button type="button" id="exhaust-golden-add" class="btn" style="background:#555;">Add series</button>
+        <div id="exhaust-golden-list" class="exhaustion-list"></div>
+      </div>
+      <div class="exhaustion-col">
+        <h3>perceptual</h3>
+        <button type="button" id="exhaust-perceptual-add" class="btn" style="background:#555;">Add series</button>
+        <div id="exhaust-perceptual-list" class="exhaustion-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Colors when adding new series</h2>
+    <p class="card-hint">Click Add to append a new series (name is auto-generated) and get the next color from the palette.</p>
+    <div class="key-group" style="margin-bottom:0.75rem;">
+      <button type="button" id="new-series-add" class="btn" style="background:#555;">Add</button>
+    </div>
+    <div id="new-series-colors"></div>
+  </div>
+
+  <div class="card card-wide">
+    <h2>Utilities (all exports)</h2>
+    <p class="card-hint">Pick a <strong>base</strong> color below. The first strip matches the <em>original</em> demo (alpha 0.5, lighten/darken/saturation amounts unchanged). Under it, <strong>one block per exported function</strong> with a visible result.</p>
+    <p class="card-hint">Base: <code id="utils-base-label">#1f77b4</code></p>
+    <div class="utils-base-row">
+      <label for="utils-base-input">Base color</label>
+      <input type="color" id="utils-base-input" value="#1f77b4" />
+      <input type="text" id="utils-base-text" class="utils-base-text" value="#1f77b4" spellcheck="false" />
+    </div>
+    <div id="utils-sections"></div>
+  </div>
+
+  <script src="../dist/index.global.js"></script>
+  <script src="utils-demo.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
