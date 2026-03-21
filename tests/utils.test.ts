@@ -67,8 +67,22 @@ describe('utils — adjustments', () => {
     expect(des).toBeLessThan(colord(blue).toHsl().s);
   });
 
-  it('invert maps toward the opposite', () => {
+  it('invert mirrors HSL lightness and keeps hue (light↔dark)', () => {
     expect(invert('#ffffff').toLowerCase()).toMatch(/^#000000/);
+    expect(invert('#000000').toLowerCase()).toMatch(/^#ffffff/);
+
+    const before = colord(blue).toHsl();
+    const after = colord(invert(blue)).toHsl();
+    expect(after.h).toBeCloseTo(before.h, 0);
+    expect(after.l).toBeCloseTo(100 - before.l, 0);
+  });
+
+  it('invert round-trips back to (approximately) the original', () => {
+    const roundTrip = colord(invert(invert(blue))).toRgb();
+    const original = colord(blue).toRgb();
+    expect(roundTrip.r).toBeCloseTo(original.r, -1);
+    expect(roundTrip.g).toBeCloseTo(original.g, -1);
+    expect(roundTrip.b).toBeCloseTo(original.b, -1);
   });
 
   it('grayscale has near-zero saturation', () => {

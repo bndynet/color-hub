@@ -1,4 +1,4 @@
-# Color Hub
+# @bndynet/color-hub
 
 A small color utility built on [colord](https://github.com/omgovich/colord). It manages multi-theme palettes, assigns colors to arbitrary keys (e.g. chart series names), and derives **default / hover / active / disabled** state colors for each base color.
 
@@ -200,7 +200,7 @@ All transform helpers accept CSS-parseable color strings and return **hex** stri
 | `darken(color, amount)` | Darken in HSL |
 | `saturate(color, amount)` | Increase saturation |
 | `desaturate(color, amount)` | Decrease saturation |
-| `invert(color)` | Photographic inverse |
+| `invert(color)` | Mirror HSL lightness (`l → 100 - l`), keep hue/saturation — light↔dark adaptation |
 | `grayscale(color)` | Same lightness, zero saturation |
 | `rotateHue(color, degrees)` | Rotate hue on the wheel (e.g. `180` for complementary) |
 

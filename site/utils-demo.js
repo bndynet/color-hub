@@ -180,7 +180,7 @@
         utilDemo('invert', (base) =>
           fnBlock(
             'invert(color)',
-            'Photographic inverse of base',
+            'Mirror HSL lightness, keep hue (light↔dark)',
             (block) =>
               block.appendChild(row([['invert(base)', invert(base)]])),
           ),

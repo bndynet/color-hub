@@ -20,8 +20,15 @@ export function desaturate(color: string, amount: number): string {
   return colord(color).desaturate(amount).toHex();
 }
 
+/**
+ * Mirror the HSL lightness (`l → 100 - l`) while keeping hue and saturation.
+ * Designed for light↔dark theme adaptation: a light-mode color maps to a
+ * dark-mode counterpart of the same hue (and vice versa), instead of a
+ * photographic RGB negative that would also flip the hue.
+ */
 export function invert(color: string): string {
-  return colord(color).invert().toHex();
+  const { h, s, l, a } = colord(color).toHsl();
+  return colord({ h, s, l: 100 - l, a }).toHex();
 }
 
 export function grayscale(color: string): string {
