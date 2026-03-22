@@ -318,69 +318,6 @@ export function distinctColorPerceptual(
   return randomDistinctColor();
 }
 
-/** Built-in ECharts-style chart palette (fixed order). */
-const CHART_PALETTE = [
-  '#5470C6', '#91CC75', '#FAC858', '#EE6666', '#73C0DE',
-  '#3BA272', '#FC8452', '#9A60B4', '#EA7CCC', '#F39C12',
-  '#E74C3C', '#3498DB', '#2ECC71', '#9B59B6', '#1ABC9C',
-  '#E67E22', '#34495E', '#16A085', '#27AE60', '#2980B9',
-] as const;
-
-export type RandomPaletteColorOptions = {
-  /**
-   * Colors already in use; the next pick maximizes the minimum CIELAB ΔE76 to these
-   * (best “furthest from all” within the fixed palette).
-   */
-  recent?: string[];
-};
-
-/**
- * Pick a color from the built-in chart palette.
- * - With no `recent`: uniform random (same as before).
- * - With `recent`: chooses the palette entry whose **minimum** ΔE76 to any recent color
- *   is as large as possible, so consecutive / simultaneous picks stay easy to tell apart.
- */
-export function randomPaletteColor(options?: RandomPaletteColorOptions): string {
-  const palette = CHART_PALETTE as readonly string[];
-  const recent = (options?.recent ?? []).filter((c) => isValidColor(c));
-  if (recent.length === 0) {
-    return palette[Math.floor(Math.random() * palette.length)]!;
-  }
-  let best = -1;
-  const bestAt: string[] = [];
-  for (const c of palette) {
-    const d = minDeltaE76ToExisting(c, recent);
-    if (d > best) {
-      best = d;
-      bestAt.length = 0;
-      bestAt.push(c);
-    } else if (d === best) {
-      bestAt.push(c);
-    }
-  }
-  return bestAt[Math.floor(Math.random() * bestAt.length)]!;
-}
-
-/**
- * Returns a function that picks from the same built-in palette while avoiding overlap with
- * the last `memory` picks (same rule as `randomPaletteColor({ recent })`).
- */
-export function createPaletteColorPicker(options?: {
-  /** How many recent colors to compare against (ring buffer). Default 16. */
-  memory?: number;
-}): () => string {
-  const memory = Math.max(1, options?.memory ?? 16);
-  const recent: string[] = [];
-  return () => {
-    const c = randomPaletteColor({ recent: [...recent] });
-    recent.push(c);
-    if (recent.length > memory) {
-      recent.shift();
-    }
-    return c;
-  };
-}
-
 export {
   mixOklab,
   mixOklch,

@@ -38,10 +38,12 @@
       randomColor,
       randomChartColor,
       randomDistinctColor,
-      randomPaletteColor,
       deltaE76,
       minDeltaE76ToExisting,
       distinctColorPerceptual,
+      generateScale,
+      isAccessible,
+      ensureContrast,
     } = ch;
 
     function swatch(label, hex) {
@@ -604,8 +606,54 @@
           renderRandomDemo('randomDistinctColor()', randomDistinctColor),
         ),
 
-        utilDemo('randomPaletteColor', () =>
-          renderRandomDemo('randomPaletteColor()', randomPaletteColor),
+        utilDemo('generateScale', (base) =>
+          fnBlock(
+            'generateScale(base)',
+            'Tonal scale 50–950 (Oklab-based, hue-stable) from the base color',
+            (block) =>
+              block.appendChild(
+                row(
+                  Object.entries(generateScale(base)).map(([stop, hex]) => [
+                    stop,
+                    hex,
+                  ]),
+                ),
+              ),
+          ),
+        ),
+
+        utilDemo('isAccessible', (base) =>
+          fnBlock(
+            'isAccessible(fg, bg, target?)',
+            'base as text on white / black at WCAG AA (≥ 4.5:1)',
+            (block) =>
+              block.appendChild(
+                row([
+                  [
+                    `on #fff: ${isAccessible(base, '#ffffff') ? 'PASS' : 'FAIL'}`,
+                    base,
+                  ],
+                  [
+                    `on #000: ${isAccessible(base, '#000000') ? 'PASS' : 'FAIL'}`,
+                    base,
+                  ],
+                ]),
+              ),
+          ),
+        ),
+
+        utilDemo('ensureContrast', (base) =>
+          fnBlock(
+            'ensureContrast(fg, bg, target?)',
+            'base adjusted until it meets AA on white / black',
+            (block) =>
+              block.appendChild(
+                row([
+                  ['on #fff', ensureContrast(base, '#ffffff')],
+                  ['on #000', ensureContrast(base, '#000000')],
+                ]),
+              ),
+          ),
         ),
       ];
     }

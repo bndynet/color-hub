@@ -37,50 +37,29 @@ console.log(series.default, series.hover, series.active, series.disabled);
 const { ColorHub } = require('@bndynet/color-hub');
 ```
 
-## Built-in chart/dashboard themes
+## Themes
 
-The package ships with ready-to-use themes tuned for data visualization:
-
-- `dashboard-light`
-- `dashboard-dark`
-- `tableau-inspired-light`
-- `tableau-inspired-dark`
-- `colorblind-safe-light`
-- `colorblind-safe-dark`
+You supply your own themes — the package ships no built-in color data, keeping it
+small and unopinionated. A theme is just a `ColorTheme` object (see **Concepts**):
 
 ```ts
-import { ColorHub, dashboardThemes } from '@bndynet/color-hub';
+import { ColorHub } from '@bndynet/color-hub';
 
-const hub = new ColorHub(dashboardThemes);
-hub.switchTheme('dashboard-light');
+const hub = new ColorHub([
+  {
+    name: 'light',
+    colorMode: 'light',
+    palette: ['#2563eb', '#14b8a6', '#f97316', '#8b5cf6'],
+    colorMap: {},
+  },
+]);
+hub.switchTheme('light');
 
 const sales = hub.getColors('Sales');
 const profit = hub.getColors('Profit');
 
 console.log(sales.default, profit.default);
 ```
-
-Single theme usage:
-
-```ts
-import {
-  ColorHub,
-  getDashboardTheme,
-  dashboardThemesByName,
-} from '@bndynet/color-hub';
-
-const one = getDashboardTheme('dashboard-dark');
-// or: const one = dashboardThemesByName['dashboard-dark'];
-const hub = new ColorHub([one]);
-```
-
-Each theme includes:
-
-- `palette`: chart series colors (ordered assignment)
-- `colors.background` / `colors.surface`: dashboard backgrounds
-- `colors.grid` / `colors.axis`: chart frame + axis
-- `colors.textPrimary` / `colors.textSecondary`: labels + secondary text
-- `colors.success` / `colors.warning` / `colors.danger` / `colors.info`: status semantics
 
 ### Browser (IIFE global)
 
@@ -174,8 +153,11 @@ These are computed with `lighten`, `darken`, and `alpha` (see Utilities), unless
 
 ```ts
 // Stable, order-independent colors for chart series
-const hub = new ColorHub(dashboardThemes, { assignment: 'hash' });
-hub.switchTheme('dashboard-light');
+const hub = new ColorHub(
+  [{ name: 'light', palette: ['#2563eb', '#14b8a6', '#f97316'], colorMap: {} }],
+  { assignment: 'hash' },
+);
+hub.switchTheme('light');
 hub.getColors('Sales').default; // same color no matter when 'Sales' is requested
 ```
 
@@ -266,9 +248,16 @@ blue[900]; // deep shade
 | `toCSSString(theme, options?)` | Render the variables as an injectable CSS rule. Adds `selector?` (default `:root`) |
 
 ```ts
-import { toCSSString, dashboardThemesByName } from '@bndynet/color-hub';
+import { toCSSString } from '@bndynet/color-hub';
 
-toCSSString(dashboardThemesByName['dashboard-dark'], {
+const darkTheme = {
+  name: 'dark',
+  colorMode: 'dark' as const,
+  colors: { background: '#020617', textPrimary: '#e2e8f0' },
+  palette: ['#60a5fa', '#2dd4bf'],
+};
+
+toCSSString(darkTheme, {
   selector: '[data-theme="dark"]',
   includePalette: true,
 });
@@ -276,7 +265,7 @@ toCSSString(dashboardThemesByName['dashboard-dark'], {
 //   --ch-background: #020617;
 //   --ch-text-primary: #e2e8f0;
 //   --ch-palette-0: #60a5fa;
-//   ...
+//   --ch-palette-1: #2dd4bf;
 // }
 ```
 
@@ -304,7 +293,6 @@ For **CIEDE2000** or **OkLCH**-based picking, use a library such as [culori](htt
 | `randomColor()` | Fully random 24-bit hex (quick prototypes) |
 | `randomChartColor(saturation?, lightness?)` | Random hue with fixed S/L (good for charts) |
 | `randomDistinctColor()` | Golden-ratio hue step (many distinguishable series) |
-| `randomPaletteColor()` | Random entry from a built-in chart palette |
 
 ```ts
 import {

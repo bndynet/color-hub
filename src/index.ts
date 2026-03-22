@@ -3,4 +3,3 @@ export * from './utils';
 export * from './scale';
 export * from './css';
 export * from './color-hub';
-export * from './themes';

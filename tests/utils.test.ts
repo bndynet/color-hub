@@ -28,22 +28,12 @@ import {
   randomColor,
   randomChartColor,
   randomDistinctColor,
-  randomPaletteColor,
-  createPaletteColorPicker,
   deltaE76,
   minDeltaE76ToExisting,
   distinctColorPerceptual,
 } from '../src/utils';
 
 const blue = '#1f77b4';
-
-/** Must match built-in palette order in `src/utils.ts` (tests only; not exported from package). */
-const BUILT_IN_CHART_PALETTE = [
-  '#5470C6', '#91CC75', '#FAC858', '#EE6666', '#73C0DE',
-  '#3BA272', '#FC8452', '#9A60B4', '#EA7CCC', '#F39C12',
-  '#E74C3C', '#3498DB', '#2ECC71', '#9B59B6', '#1ABC9C',
-  '#E67E22', '#34495E', '#16A085', '#27AE60', '#2980B9',
-] as const;
 
 describe('utils — adjustments', () => {
   it('alpha sets opacity', () => {
@@ -267,42 +257,6 @@ describe('utils — random', () => {
   it('randomDistinctColor returns hex', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.25);
     expect(randomDistinctColor()).toMatch(/^#[0-9a-f]{6}$/i);
-  });
-
-  it('randomPaletteColor returns a known palette entry', () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0.99);
-    const c = randomPaletteColor();
-    expect(c).toMatch(/^#[0-9A-F]{6}$/i);
-    expect(c).toBe('#2980B9');
-  });
-
-  it('randomPaletteColor({ recent }) maximizes minimum ΔE76 to recent set', () => {
-    const recent = ['#5470C6'];
-    const c = randomPaletteColor({ recent });
-    let maxMin = 0;
-    for (const p of BUILT_IN_CHART_PALETTE) {
-      const m = minDeltaE76ToExisting(p, recent);
-      if (m > maxMin) {
-        maxMin = m;
-      }
-    }
-    expect(minDeltaE76ToExisting(c, recent)).toBeCloseTo(maxMin, 5);
-  });
-
-  it('createPaletteColorPicker: second color is furthest from first in palette', () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0);
-    const pick = createPaletteColorPicker({ memory: 8 });
-    const first = pick();
-    const second = pick();
-    expect(first).toBe('#5470C6');
-    let maxMin = 0;
-    for (const p of BUILT_IN_CHART_PALETTE) {
-      const m = minDeltaE76ToExisting(p, [first]);
-      if (m > maxMin) {
-        maxMin = m;
-      }
-    }
-    expect(minDeltaE76ToExisting(second, [first])).toBeCloseTo(maxMin, 5);
   });
 });
 

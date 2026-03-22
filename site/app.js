@@ -1,14 +1,47 @@
 document.body.classList.add('has-wide-utils');
 
-const { ColorHub, dashboardThemes, contrastText } = window.ch;
+const { ColorHub, contrastText } = window.ch;
 
-const demoThemes = (dashboardThemes || []).map((theme) => ({
-  ...theme,
-  colorMap: {
-    ...(theme.colorMap || {}),
-    'Series Red': '#FF0000',
+// The package ships no built-in themes — you define your own ColorTheme objects.
+// These two are local to the demo and illustrate the expected shape.
+const demoThemes = [
+  {
+    name: 'demo-light',
+    colorMode: 'light',
+    colors: {
+      background: '#f8fafc',
+      surface: '#ffffff',
+      grid: '#e2e8f0',
+      axis: '#64748b',
+      textPrimary: '#0f172a',
+      textSecondary: '#334155',
+      success: '#16a34a',
+      warning: '#d97706',
+      danger: '#dc2626',
+      info: '#0284c7',
+    },
+    palette: ['#2563eb', '#14b8a6', '#f97316', '#8b5cf6', '#e11d48', '#0891b2'],
+    colorMap: { 'Series Red': '#FF0000' },
   },
-}));
+  {
+    name: 'demo-dark',
+    colorMode: 'dark',
+    colors: {
+      background: '#020617',
+      surface: '#0f172a',
+      grid: '#1e293b',
+      axis: '#94a3b8',
+      textPrimary: '#e2e8f0',
+      textSecondary: '#cbd5e1',
+      success: '#22c55e',
+      warning: '#f59e0b',
+      danger: '#f43f5e',
+      info: '#38bdf8',
+    },
+    palette: ['#60a5fa', '#2dd4bf', '#fbbf24', '#a78bfa', '#fb7185', '#38bdf8'],
+    colorMap: { 'Series Red': '#FF0000' },
+  },
+];
 const cs = new ColorHub(demoThemes);
 
 const seriesKeys = ['Series A', 'Series B', 'Series C', 'Series D', 'Series Red'];
@@ -120,7 +153,7 @@ function renderDashboardThemesGallery() {
   if (!dashboardThemesGalleryEl) return;
   dashboardThemesGalleryEl.innerHTML = '';
   const currentName = cs.getCurrentTheme()?.name;
-  (dashboardThemes || []).forEach((theme) => {
+  demoThemes.forEach((theme) => {
     const card = document.createElement('article');
     card.className = 'dashboard-theme-card';
     card.dataset.themeName = theme.name;
