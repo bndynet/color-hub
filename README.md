@@ -169,7 +169,15 @@ These are computed with `lighten`, `darken`, and `alpha` (see Utilities), unless
 
 - **`StateRecipe`**: optional `hover` / `active` / `disabled`, each `(baseColor, hub) => string` — second argument is the **`ColorHub`** instance. Use `hub.getCurrentTheme()` for the active theme (`name`, `colorMode`, `colors`, `palette`, etc.). Omitted states keep the built-in defaults above.
 - **Merge order**: built-in defaults → `new ColorHub(themes, { stateRecipe })` → current theme’s `stateRecipe` (theme wins per field).
-- **`paletteExhaustion`**: `'golden'` (default) or `'perceptual'` — when the theme `palette` is exhausted, use golden-ratio hue or **CIELAB ΔE76** spacing (`distinctColorPerceptual`). Tune with **`perceptualMinDeltaE`** (default ~23) and **`perceptualMaxAttempts`** (default 100).
+- **`assignment`**: `'sequential'` (default) or `'hash'`. `sequential` takes the next unused palette color in request order. `hash` uses a deterministic `hash(key) → palette index`, so the **same key always maps to the same color regardless of request order** — ideal for keeping chart-series colors stable across renders/reloads (collisions may reuse a color).
+- **`paletteExhaustion`**: `'golden'` (default) or `'perceptual'` — when the theme `palette` is exhausted, use golden-ratio hue or **CIELAB ΔE76** spacing (`distinctColorPerceptual`). Tune with **`perceptualMinDeltaE`** (default ~23) and **`perceptualMaxAttempts`** (default 100). (Applies to `sequential` assignment; `hash` always picks from the palette when it is non-empty.)
+
+```ts
+// Stable, order-independent colors for chart series
+const hub = new ColorHub(dashboardThemes, { assignment: 'hash' });
+hub.switchTheme('dashboard-light');
+hub.getColors('Sales').default; // same color no matter when 'Sales' is requested
+```
 
 ```ts
 import { ColorHub, lighten, darken } from '@bndynet/color-hub';
@@ -221,8 +229,56 @@ All transform helpers accept CSS-parseable color strings and return **hex** stri
 |----------|-------------|
 | `contrastRatio(foreground, background)` | WCAG 2.x contrast ratio (1–21) |
 | `contrastText(background, options?)` | Returns `light` or `dark` text color (defaults `#ffffff` / `#000000`) using perceived brightness |
+| `contrastThreshold(level?, size?)` | Minimum WCAG ratio for `'AA'`/`'AAA'` × `'normal'`/`'large'` (e.g. AA normal → 4.5) |
+| `isAccessible(fg, bg, target?)` | Whether `fg` on `bg` meets a WCAG threshold. `target`: `{ level?, size?, ratio? }` (default AA / normal) |
+| `ensureContrast(fg, bg, target?)` | Adjusts `fg` lightness (keeping hue/sat) until it meets the target ratio; falls back to black/white |
 | `brightness(color)` | Perceived brightness 0–1 (colord / WCAG-derived) |
 | `isDark(color)` / `isLight(color)` | Convenience wrappers around colord |
+
+```ts
+import { isAccessible, ensureContrast } from '@bndynet/color-hub';
+
+isAccessible('#777', '#fff');                 // false (AA normal needs ≥ 4.5)
+ensureContrast('#9bbcff', '#ffffff');         // darkened until ≥ 4.5:1 on white
+ensureContrast('#1f3a8a', '#000', { level: 'AAA' }); // lightened until ≥ 7:1
+```
+
+### Tonal scales
+
+| Function | Description |
+|----------|-------------|
+| `generateScale(base, options?)` | Build an 11-stop scale (`50`–`950`) from one color. The base anchors `500`; lighter stops blend toward white and darker stops toward black in **Oklab** (hue-stable, perceptually smooth). `options.mix` overrides per-stop blend amounts. |
+
+```ts
+import { generateScale } from '@bndynet/color-hub';
+
+const blue = generateScale('#2563eb');
+blue[50];  // very light tint
+blue[500]; // ≈ '#2563eb' (the base)
+blue[900]; // deep shade
+```
+
+### CSS variables / theme output
+
+| Function | Description |
+|----------|-------------|
+| `toCSSVariables(theme, options?)` | Map a theme's `colors` (camelCase → kebab-case) to `{ '--ch-grid': '#...' }`. `options`: `{ prefix?, includePalette?, includeColorMap? }` |
+| `toCSSString(theme, options?)` | Render the variables as an injectable CSS rule. Adds `selector?` (default `:root`) |
+
+```ts
+import { toCSSString, dashboardThemesByName } from '@bndynet/color-hub';
+
+toCSSString(dashboardThemesByName['dashboard-dark'], {
+  selector: '[data-theme="dark"]',
+  includePalette: true,
+});
+// [data-theme="dark"] {
+//   --ch-background: #020617;
+//   --ch-text-primary: #e2e8f0;
+//   --ch-palette-0: #60a5fa;
+//   ...
+// }
+```
 
 ### Parsing and validation
 

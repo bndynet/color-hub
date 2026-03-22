@@ -1,6 +1,7 @@
 import {
   ColorHubOptions,
   ColorTheme,
+  KeyAssignment,
   PaletteExhaustion,
   State,
   StateColors,
@@ -25,6 +26,7 @@ export class ColorHub<T = undefined> {
   private currentTheme: ColorTheme<T>;
   private indexUsedInPalette = 0;
   private hubStateRecipe: StateRecipe<T> | undefined;
+  private assignment: KeyAssignment;
   private paletteExhaustion: PaletteExhaustion;
   private perceptualMinDeltaE: number;
   private perceptualMaxAttempts: number;
@@ -33,6 +35,7 @@ export class ColorHub<T = undefined> {
     private defaultThemes: ColorTheme<T>[],
     options?: ColorHubOptions<T>,
   ) {
+    this.assignment = options?.assignment ?? 'sequential';
     this.paletteExhaustion = options?.paletteExhaustion ?? 'golden';
     this.perceptualMinDeltaE = options?.perceptualMinDeltaE ?? 23;
     this.perceptualMaxAttempts = options?.perceptualMaxAttempts ?? 100;
@@ -104,6 +107,16 @@ export class ColorHub<T = undefined> {
     });
   }
 
+  /** Stable, order-independent 32-bit hash (FNV-1a) for deterministic assignment. */
+  private static hashKey(key: string): number {
+    let hash = 2166136261;
+    for (let i = 0; i < key.length; i++) {
+      hash ^= key.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+
   private getColorByKey(key: string): string {
     const colorMap = this.currentTheme.colorMap ?? {};
     const palette = this.currentTheme.palette ?? [];
@@ -112,31 +125,37 @@ export class ColorHub<T = undefined> {
       return colorMap[key];
     }
 
-    const usedColors = Object.values(colorMap);
     let color: string | undefined;
 
-    // Find an unused color from the palette
-    while (this.indexUsedInPalette < palette.length) {
-      const candidateColor = palette[this.indexUsedInPalette++];
-      if (!usedColors.includes(candidateColor)) {
-        color = candidateColor;
-        break;
-      }
-    }
+    if (this.assignment === 'hash' && palette.length > 0) {
+      // Deterministic: same key → same palette color, independent of request order.
+      color = palette[ColorHub.hashKey(key) % palette.length];
+    } else {
+      const usedColors = Object.values(colorMap);
 
-    // If palette is exhausted, generate a new color
-    if (!color) {
-      if (this.paletteExhaustion === 'perceptual') {
-        do {
-          color = distinctColorPerceptual(usedColors, {
-            minDeltaE: this.perceptualMinDeltaE,
-            maxAttempts: this.perceptualMaxAttempts,
-          });
-        } while (usedColors.includes(color));
-      } else {
-        do {
-          color = randomDistinctColor();
-        } while (usedColors.includes(color));
+      // Find an unused color from the palette
+      while (this.indexUsedInPalette < palette.length) {
+        const candidateColor = palette[this.indexUsedInPalette++];
+        if (!usedColors.includes(candidateColor)) {
+          color = candidateColor;
+          break;
+        }
+      }
+
+      // If palette is exhausted, generate a new color
+      if (!color) {
+        if (this.paletteExhaustion === 'perceptual') {
+          do {
+            color = distinctColorPerceptual(usedColors, {
+              minDeltaE: this.perceptualMinDeltaE,
+              maxAttempts: this.perceptualMaxAttempts,
+            });
+          } while (usedColors.includes(color));
+        } else {
+          do {
+            color = randomDistinctColor();
+          } while (usedColors.includes(color));
+        }
       }
     }
 

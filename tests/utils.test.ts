@@ -16,6 +16,9 @@ import {
   colorStepsOklab,
   contrastRatio,
   contrastText,
+  contrastThreshold,
+  isAccessible,
+  ensureContrast,
   brightness,
   isValidColor,
   isDark,
@@ -187,6 +190,45 @@ describe('utils — contrast and readability', () => {
     expect(isLight('#000000')).toBe(false);
     expect(isLight('#ffffff')).toBe(true);
     expect(isDark('#ffffff')).toBe(false);
+  });
+});
+
+describe('utils — accessibility', () => {
+  it('contrastThreshold matches WCAG levels/sizes', () => {
+    expect(contrastThreshold('AA', 'normal')).toBe(4.5);
+    expect(contrastThreshold('AA', 'large')).toBe(3);
+    expect(contrastThreshold('AAA', 'normal')).toBe(7);
+    expect(contrastThreshold('AAA', 'large')).toBe(4.5);
+  });
+
+  it('isAccessible passes for black on white at AA', () => {
+    expect(isAccessible('#000000', '#ffffff')).toBe(true);
+  });
+
+  it('isAccessible fails for low-contrast pairs', () => {
+    expect(isAccessible('#777777', '#888888')).toBe(false);
+  });
+
+  it('isAccessible honors an explicit ratio target', () => {
+    expect(isAccessible('#767676', '#ffffff', { ratio: 21 })).toBe(false);
+    expect(isAccessible('#767676', '#ffffff', { ratio: 1 })).toBe(true);
+  });
+
+  it('ensureContrast returns the input when it already passes', () => {
+    expect(ensureContrast('#000000', '#ffffff')).toBe(
+      colord('#000000').toHex(),
+    );
+  });
+
+  it('ensureContrast darkens foreground on a light background until AA', () => {
+    const fixed = ensureContrast('#9bbcff', '#ffffff');
+    expect(contrastRatio(fixed, '#ffffff')).toBeGreaterThanOrEqual(4.5);
+    expect(colord(fixed).brightness()).toBeLessThan(colord('#9bbcff').brightness());
+  });
+
+  it('ensureContrast lightens foreground on a dark background until AAA', () => {
+    const fixed = ensureContrast('#1f3a8a', '#000000', { level: 'AAA' });
+    expect(contrastRatio(fixed, '#000000')).toBeGreaterThanOrEqual(7);
   });
 });
 

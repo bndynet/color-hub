@@ -196,6 +196,64 @@ describe('ColorHub', () => {
     });
   });
 
+  describe('hash assignment', () => {
+    const palette = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00'];
+
+    it('maps a key to the same color regardless of request order', () => {
+      const a = new ColorHub([{ name: 't', palette, colorMap: {} }], {
+        assignment: 'hash',
+      });
+      const b = new ColorHub([{ name: 't', palette, colorMap: {} }], {
+        assignment: 'hash',
+      });
+      a.switchTheme('t');
+      b.switchTheme('t');
+
+      // Request in different orders.
+      a.getColors('Sales');
+      a.getColors('Profit');
+      b.getColors('Profit');
+      b.getColors('Sales');
+
+      expect(a.getColors('Sales').default).toBe(b.getColors('Sales').default);
+      expect(a.getColors('Profit').default).toBe(b.getColors('Profit').default);
+    });
+
+    it('always picks a color from the palette', () => {
+      const hub = new ColorHub([{ name: 't', palette, colorMap: {} }], {
+        assignment: 'hash',
+      });
+      hub.switchTheme('t');
+      for (const key of ['a', 'b', 'c', 'longer-series-name', 'x']) {
+        expect(palette).toContain(hub.getColors(key).default);
+      }
+    });
+
+    it('still honors a pre-filled colorMap', () => {
+      const hub = new ColorHub(
+        [{ name: 't', palette, colorMap: { pinned: '#123456' } }],
+        { assignment: 'hash' },
+      );
+      hub.switchTheme('t');
+      expect(hub.getColors('pinned').default).toBe('#123456');
+    });
+
+    it('falls back to generation when palette is empty', () => {
+      const hub = new ColorHub([{ name: 't', palette: [], colorMap: {} }], {
+        assignment: 'hash',
+      });
+      hub.switchTheme('t');
+      expect(hub.getColors('only').default).toMatch(/^#[0-9A-F]{6}$/i);
+    });
+
+    it('defaults to sequential assignment', () => {
+      const hub = new ColorHub([{ name: 't', palette, colorMap: {} }]);
+      hub.switchTheme('t');
+      expect(hub.getColors('first').default).toBe('#FF0000');
+      expect(hub.getColors('second').default).toBe('#00FF00');
+    });
+  });
+
   describe('state derivation', () => {
     beforeEach(() => {
       hub.switchTheme('light');

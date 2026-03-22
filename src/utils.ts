@@ -90,6 +90,81 @@ export function contrastText(
   return colord(background).isDark() ? light : dark;
 }
 
+/** WCAG conformance level. */
+export type WcagLevel = 'AA' | 'AAA';
+
+/** Text size bucket for WCAG thresholds (`large` ≈ ≥18.66px bold / ≥24px). */
+export type TextSize = 'normal' | 'large';
+
+export type ContrastTarget = {
+  /** WCAG level (default `AA`). Ignored when `ratio` is given. */
+  level?: WcagLevel;
+  /** Text size (default `normal`). Ignored when `ratio` is given. */
+  size?: TextSize;
+  /** Explicit target contrast ratio (1–21); overrides `level` / `size`. */
+  ratio?: number;
+};
+
+/** Minimum WCAG 2.x contrast ratio for a level/size combination. */
+export function contrastThreshold(
+  level: WcagLevel = 'AA',
+  size: TextSize = 'normal',
+): number {
+  if (level === 'AAA') {
+    return size === 'large' ? 4.5 : 7;
+  }
+  return size === 'large' ? 3 : 4.5;
+}
+
+function resolveTargetRatio(target?: ContrastTarget): number {
+  if (target?.ratio !== undefined) {
+    return target.ratio;
+  }
+  return contrastThreshold(target?.level, target?.size);
+}
+
+/**
+ * Whether `foreground` on `background` meets a WCAG contrast threshold.
+ * Defaults to AA / normal text (≥ 4.5:1).
+ */
+export function isAccessible(
+  foreground: string,
+  background: string,
+  target?: ContrastTarget,
+): boolean {
+  return contrastRatio(foreground, background) >= resolveTargetRatio(target);
+}
+
+/**
+ * Adjust `foreground`'s lightness until it meets the target contrast against
+ * `background`, keeping hue/saturation. Lightens toward white on dark backgrounds
+ * and darkens toward black on light backgrounds; falls back to the better of
+ * black/white if the ramp cannot reach the target.
+ */
+export function ensureContrast(
+  foreground: string,
+  background: string,
+  target?: ContrastTarget,
+): string {
+  const required = resolveTargetRatio(target);
+  let current = colord(foreground).toHex();
+  if (contrastRatio(current, background) >= required) {
+    return current;
+  }
+  const pushLighter = colord(background).isDark();
+  for (let i = 0; i < 60; i++) {
+    current = pushLighter ? lighten(current, 0.02) : darken(current, 0.02);
+    if (contrastRatio(current, background) >= required) {
+      return current;
+    }
+  }
+  const white = '#ffffff';
+  const black = '#000000';
+  return contrastRatio(white, background) >= contrastRatio(black, background)
+    ? white
+    : black;
+}
+
 /** Perceived brightness 0–1 (colord / WCAG-derived). */
 export function brightness(color: string): number {
   return colord(color).brightness();

@@ -28,6 +28,16 @@ export type ColorMode = 'light' | 'dark';
 export type PaletteExhaustion = 'golden' | 'perceptual';
 
 /**
+ * How a `key` is mapped to a palette color.
+ * - `sequential` — next unused palette color in order (default; legacy behavior).
+ *   The result depends on the order keys are first requested.
+ * - `hash` — deterministic `hash(key) → palette index`. The same key always gets
+ *   the same color regardless of request order (ideal for stable chart series),
+ *   at the cost of possible color reuse on hash collisions.
+ */
+export type KeyAssignment = 'sequential' | 'hash';
+
+/**
  * Theme definition. T is the type of colors when provided. Omit T to leave colors untyped.
  */
 export type ColorTheme<T = undefined> = {
@@ -59,6 +69,11 @@ export type StateRecipe<T = undefined> = {
 export type ColorHubOptions<T = undefined> = {
   /** Merged with each theme's `stateRecipe`; theme fields override hub fields. */
   stateRecipe?: StateRecipe<T>;
+  /**
+   * How keys map to palette colors: `sequential` (default) or `hash`
+   * (deterministic, order-independent). See {@link KeyAssignment}.
+   */
+  assignment?: KeyAssignment;
   /** When `palette` runs out: `golden` (default) or `perceptual` (ΔE76 spacing). */
   paletteExhaustion?: PaletteExhaustion;
   /** Minimum ΔE76 vs existing assigned colors for `perceptual` (default ~23). */
