@@ -98,6 +98,22 @@ function srgbToOklab(r: number, g: number, b: number): [number, number, number] 
   return [lab[0], lab[1], lab[2]];
 }
 
+/**
+ * Convert a color to **OKLab** rectangular coordinates (`L` ≈ 0–1, `a`/`b` small
+ * signed). OKLab is more perceptually uniform than CIELAB, so Euclidean distance
+ * here (see {@link deltaEOK}) tracks "just noticeable" differences well.
+ * Invalid input falls back to black `{ l: 0, a: 0, b: 0 }`.
+ */
+export function toOklab(color: string): { l: number; a: number; b: number } {
+  const c = colord(color);
+  if (!c.isValid()) {
+    return { l: 0, a: 0, b: 0 };
+  }
+  const { r, g, b } = c.toRgb();
+  const lab = srgbToOklab(r, g, b);
+  return { l: lab[0], a: lab[1], b: lab[2] };
+}
+
 function oklabToHex(lab: number[], alpha: number): string {
   const xyz = oklabToXyz(lab);
   const lin = xyzToLinSrgb(xyz).map((c) => Math.max(0, Math.min(1, c)));

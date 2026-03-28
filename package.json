@@ -23,7 +23,54 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./utils": {
+      "types": "./dist/utils.d.ts",
+      "import": "./dist/utils.js",
+      "require": "./dist/utils.cjs"
+    },
+    "./scale": {
+      "types": "./dist/scale.d.ts",
+      "import": "./dist/scale.js",
+      "require": "./dist/scale.cjs"
+    },
+    "./harmony": {
+      "types": "./dist/harmony.d.ts",
+      "import": "./dist/harmony.js",
+      "require": "./dist/harmony.cjs"
+    },
+    "./css": {
+      "types": "./dist/css.d.ts",
+      "import": "./dist/css.js",
+      "require": "./dist/css.cjs"
+    },
+    "./theme-factory": {
+      "types": "./dist/theme-factory.d.ts",
+      "import": "./dist/theme-factory.js",
+      "require": "./dist/theme-factory.cjs"
+    },
+    "./runtime": {
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.js",
+      "require": "./dist/runtime.cjs"
+    },
+    "./cvd": {
+      "types": "./dist/cvd.d.ts",
+      "import": "./dist/cvd.js",
+      "require": "./dist/cvd.cjs"
+    },
+    "./interpolate": {
+      "types": "./dist/interpolate.d.ts",
+      "import": "./dist/interpolate.js",
+      "require": "./dist/interpolate.cjs"
+    },
+    "./color-hub": {
+      "types": "./dist/color-hub.d.ts",
+      "import": "./dist/color-hub.js",
+      "require": "./dist/color-hub.cjs"
+    },
+    "./global": "./dist/index.global.js",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",

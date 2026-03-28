@@ -5,4 +5,6 @@ export * from './harmony';
 export * from './css';
 export * from './theme-factory';
 export * from './runtime';
+export * from './cvd';
+export * from './interpolate';
 export * from './color-hub';

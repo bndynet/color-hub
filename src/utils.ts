@@ -1,4 +1,5 @@
 import { colord, type AnyColor } from 'colord';
+import { toOklab } from './oklch-mix';
 
 export function alpha(color: string, alpha: number): string {
   return colord(color).alpha(alpha).toHex();
@@ -187,6 +188,54 @@ export function toRgb(color: string) {
   return colord(color).toRgb();
 }
 
+/** `{ h, s, l, a }` channels (`h` 0–360, `s`/`l` 0–100, `a` 0–1). */
+export function toHsl(color: string) {
+  return colord(color).toHsl();
+}
+
+/** CSS `hsl(...)` / `hsla(...)` string. */
+export function toHslString(color: string): string {
+  return colord(color).toHslString();
+}
+
+/** Round `value` to `precision` decimal places. */
+function roundTo(value: number, precision: number): number {
+  const f = 10 ** precision;
+  return Math.round(value * f) / f;
+}
+
+/**
+ * Convert a color to **OKLCH** (`l` ≈ 0–1, `c` ≥ 0 chroma, `h` 0–360 hue degrees,
+ * `alpha` 0–1). Derived from OKLab (`c = hypot(a, b)`, `h = atan2(b, a)`).
+ * For (near-)achromatic colors the hue is reported as `0`.
+ */
+export function toOklch(color: string): {
+  l: number;
+  c: number;
+  h: number;
+  alpha: number;
+} {
+  const { l, a, b } = toOklab(color);
+  const c = Math.hypot(a, b);
+  let h = (Math.atan2(b, a) * 180) / Math.PI;
+  if (h < 0) {
+    h += 360;
+  }
+  return { l, c, h, alpha: colord(color).alpha() };
+}
+
+/**
+ * CSS `oklch(L C H)` / `oklch(L C H / a)` string (alpha omitted when opaque).
+ * Modern browsers render `oklch()` natively; pairs well with {@link toCSSVariables}.
+ */
+export function toOklchString(color: string, precision = 4): string {
+  const { l, c, h, alpha } = toOklch(color);
+  const body = `${roundTo(l, precision)} ${roundTo(c, precision)} ${roundTo(h, precision)}`;
+  return alpha < 1
+    ? `oklch(${body} / ${roundTo(alpha, precision)})`
+    : `oklch(${body})`;
+}
+
 /** Evenly spaced {@link mix} samples from `from` to `to` (inclusive). `steps` ≥ 2. */
 export function colorSteps(from: string, to: string, steps: number): string[] {
   const n = Math.max(2, Math.floor(steps));
@@ -291,27 +340,78 @@ export function minDeltaE76ToExisting(
 }
 
 /**
- * Pick a saturated chart-like color whose minimum ΔE76 to `existing` is at least `minDeltaE`.
- * Falls back to `randomDistinctColor()` after `maxAttempts`. For publication-grade colorblind-safe
- * palettes, combine with Paul Tol’s schemes or a dedicated CB palette; this improves pairwise spread vs golden hue alone.
+ * Perceptual color difference in **OKLab** (Euclidean ΔEOK). OKLab is more
+ * perceptually uniform than CIELAB, so this tracks "just noticeable" differences
+ * better than {@link deltaE76} while staying dependency-free.
+ *
+ * Scale note: OKLab `L`/`a`/`b` are on a ~0–1 scale, so ΔEOK values are far
+ * smaller than ΔE76 (e.g. black↔white ≈ 1.0, not ~100). Thresholds differ
+ * accordingly.
+ */
+export function deltaEOK(color1: string, color2: string): number {
+  const p = toOklab(color1);
+  const q = toOklab(color2);
+  const dL = p.l - q.l;
+  const dA = p.a - q.a;
+  const dB = p.b - q.b;
+  return Math.sqrt(dL * dL + dA * dA + dB * dB);
+}
+
+/** Minimum ΔEOK from `candidate` to any color in `existing`. */
+export function minDeltaEOKToExisting(
+  candidate: string,
+  existing: string[],
+): number {
+  if (existing.length === 0) {
+    return Number.POSITIVE_INFINITY;
+  }
+  let m = Number.POSITIVE_INFINITY;
+  for (const e of existing) {
+    const d = deltaEOK(candidate, e);
+    if (d < m) {
+      m = d;
+    }
+  }
+  return m;
+}
+
+/**
+ * Pick a saturated chart-like color whose minimum perceptual distance to
+ * `existing` is at least `minDeltaE`. Falls back to `randomDistinctColor()` after
+ * `maxAttempts`. For publication-grade colorblind-safe palettes, combine with
+ * Paul Tol’s schemes or a dedicated CB palette; this improves pairwise spread vs
+ * golden hue alone.
+ *
+ * @param options.metric `'de76'` (default, CIELAB) or `'deOK'` (OKLab). When
+ *   `minDeltaE` is omitted, the default threshold matches the metric scale
+ *   (~23 for ΔE76, ~0.08 for ΔEOK).
  */
 export function distinctColorPerceptual(
   existing: string[],
-  options?: { minDeltaE?: number; maxAttempts?: number },
+  options?: {
+    minDeltaE?: number;
+    maxAttempts?: number;
+    metric?: 'de76' | 'deOK';
+  },
 ): string {
-  const minDE = options?.minDeltaE ?? 23;
+  const metric = options?.metric ?? 'de76';
+  const minDE = options?.minDeltaE ?? (metric === 'deOK' ? 0.08 : 23);
   const maxAttempts = options?.maxAttempts ?? 100;
   const valid = existing.filter((c) => isValidColor(c));
   if (valid.length === 0) {
     return randomDistinctColor();
   }
+  const distance = (candidate: string) =>
+    metric === 'deOK'
+      ? minDeltaEOKToExisting(candidate, valid)
+      : minDeltaE76ToExisting(candidate, valid);
   const golden = 0.618033988749895;
   for (let i = 0; i < maxAttempts; i++) {
     const hue = (i * golden * 360 + Math.random() * 30) % 360;
     const sat = 55 + (i % 5) * 5;
     const light = 45 + (i % 3) * 5;
     const c = colord({ h: hue, s: sat, l: light }).toHex();
-    if (minDeltaE76ToExisting(c, valid) >= minDE) {
+    if (distance(c) >= minDE) {
       return c;
     }
   }
@@ -323,4 +423,5 @@ export {
   mixOklch,
   colorStepsOklch,
   colorStepsOklab,
+  toOklab,
 } from './oklch-mix';

@@ -31,6 +31,13 @@ import {
   deltaE76,
   minDeltaE76ToExisting,
   distinctColorPerceptual,
+  deltaEOK,
+  minDeltaEOKToExisting,
+  toOklab,
+  toHsl,
+  toHslString,
+  toOklch,
+  toOklchString,
 } from '../src/utils';
 
 const blue = '#1f77b4';
@@ -275,5 +282,68 @@ describe('utils — perceptual distance (ΔE76)', () => {
     const c = distinctColorPerceptual(existing, { minDeltaE: 18, maxAttempts: 200 });
     expect(c).toMatch(/^#[0-9a-f]{6}$/i);
     expect(minDeltaE76ToExisting(c, existing)).toBeGreaterThanOrEqual(18);
+  });
+});
+
+describe('utils — perceptual distance (ΔEOK)', () => {
+  it('toOklab returns L in ~[0,1] and zero chroma for gray', () => {
+    const lab = toOklab('#808080');
+    expect(lab.l).toBeGreaterThan(0);
+    expect(lab.l).toBeLessThan(1);
+    expect(Math.abs(lab.a)).toBeLessThan(1e-3);
+    expect(Math.abs(lab.b)).toBeLessThan(1e-3);
+  });
+
+  it('deltaEOK is zero for identical colors', () => {
+    expect(deltaEOK('#abc', '#aabbcc')).toBeCloseTo(0, 5);
+  });
+
+  it('deltaEOK black↔white is larger than any small step', () => {
+    const far = deltaEOK('#000000', '#ffffff');
+    const near = deltaEOK('#000000', '#010101');
+    expect(far).toBeGreaterThan(near);
+    expect(far).toBeGreaterThan(0.9);
+  });
+
+  it('distinctColorPerceptual honors the deOK metric', () => {
+    const existing = ['#e74c3c', '#3498db', '#2ecc71'];
+    const c = distinctColorPerceptual(existing, {
+      metric: 'deOK',
+      minDeltaE: 0.06,
+      maxAttempts: 300,
+    });
+    expect(c).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(minDeltaEOKToExisting(c, existing)).toBeGreaterThanOrEqual(0.06);
+  });
+});
+
+describe('utils — output formats', () => {
+  it('toHsl returns hsl channels', () => {
+    const { h, s, l } = toHsl('#ff0000');
+    expect(h).toBeCloseTo(0, 0);
+    expect(s).toBeCloseTo(100, 0);
+    expect(l).toBeCloseTo(50, 0);
+  });
+
+  it('toHslString emits an hsl(...) string', () => {
+    expect(toHslString('#ff0000')).toMatch(/^hsla?\(/);
+  });
+
+  it('toOklch derives chroma/hue and a reasonable hue for red', () => {
+    const { l, c, h, alpha } = toOklch('#ff0000');
+    expect(l).toBeGreaterThan(0);
+    expect(c).toBeGreaterThan(0);
+    expect(h).toBeGreaterThanOrEqual(0);
+    expect(h).toBeLessThan(360);
+    expect(alpha).toBe(1);
+  });
+
+  it('toOklch reports near-zero chroma for gray', () => {
+    expect(toOklch('#808080').c).toBeLessThan(1e-3);
+  });
+
+  it('toOklchString emits oklch(L C H) and includes alpha when transparent', () => {
+    expect(toOklchString('#ff0000')).toMatch(/^oklch\([^/]+\)$/);
+    expect(toOklchString('#ff000080')).toMatch(/^oklch\(.+\/ .+\)$/);
   });
 });

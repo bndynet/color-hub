@@ -72,7 +72,22 @@ The build emits `dist/index.global.js`. Include it on the page and use the globa
 </script>
 ```
 
-> `package.json` `exports` only declare ESM/CJS entry points. For IIFE via CDN, point to the built file path or host `index.global.js` yourself.
+The IIFE bundle is also declared as the `./global` subpath export.
+
+### Deep imports (tree-shaking)
+
+Each feature module is published as a subpath export, so you can import just what
+you need and let the bundler drop the rest:
+
+```ts
+import { harmony } from '@bndynet/color-hub/harmony';
+import { createInterpolator } from '@bndynet/color-hub/interpolate';
+import { simulate } from '@bndynet/color-hub/cvd';
+```
+
+Available subpaths: `./utils`, `./scale`, `./harmony`, `./css`, `./theme-factory`,
+`./runtime`, `./cvd`, `./interpolate`, `./color-hub` (plus the `.` barrel and
+`./global` IIFE). Every subpath ships ESM, CJS, and type declarations.
 
 ## Concepts
 
@@ -264,6 +279,33 @@ triadic('#2563eb');                 // ['#2563eb', '#eb2563', '#63eb25'] (approx
 harmony('#2563eb', 'analogous', { angle: 45 });
 ```
 
+### Interpolation / continuous scales
+
+Map a continuous value to a color over **your own** stop colors (the package ships
+no built-in scales). Useful for heatmaps, choropleth maps, and value→color
+mappings. Interpolation defaults to **Oklab** (perceptually smooth); pass
+`{ space: 'srgb' }` for raw channel mixing.
+
+| Function | Description |
+|----------|-------------|
+| `createInterpolator(stops, options?)` | Returns `(t) => hex` for `t` in `[0, 1]` (clamped), stops spread evenly. `options`: `{ space?: 'oklab' \| 'srgb' }` |
+| `sample(stops, n, options?)` | `n` evenly spaced samples (inclusive endpoints); generalizes `colorSteps` to more than two stops |
+| `createDivergingInterpolator(low, mid, high, options?)` | `(t) => hex` with `mid` fixed at `t = 0.5` — for signed data (e.g. -1…+1) |
+
+```ts
+import { createInterpolator, createDivergingInterpolator, sample } from '@bndynet/color-hub';
+
+const heat = createInterpolator(['#2563eb', '#facc15', '#dc2626']);
+heat(0);   // ≈ '#2563eb'
+heat(0.5); // ≈ '#facc15'
+heat(1);   // ≈ '#dc2626'
+
+const corr = createDivergingInterpolator('#2563eb', '#f8fafc', '#dc2626');
+corr(0.5); // ≈ '#f8fafc' (neutral midpoint)
+
+sample(['#2563eb', '#dc2626'], 5); // 5 colors, inclusive endpoints
+```
+
 ### Theme generation
 
 | Function | Description |
@@ -334,12 +376,24 @@ hub.switchTheme(getSystemColorScheme() === 'dark' ? 'brand-dark' : 'brand-light'
 // later: unbind();
 ```
 
-### Parsing and validation
+### Parsing and conversion
 
 | Function | Description |
 |----------|-------------|
 | `isValidColor(input)` | Whether the string/object parses as a color |
 | `toRgb(color)` | `{ r, g, b, a }` for canvas/CSS (`a` 0–1) |
+| `toHsl(color)` | `{ h, s, l, a }` (`h` 0–360, `s`/`l` 0–100, `a` 0–1) |
+| `toHslString(color)` | CSS `hsl(...)` / `hsla(...)` string |
+| `toOklab(color)` | `{ l, a, b }` OKLab coordinates (`l` ≈ 0–1) |
+| `toOklch(color)` | `{ l, c, h, alpha }` OKLCH (`c` ≥ 0, `h` 0–360; achromatic → `h = 0`) |
+| `toOklchString(color, precision?)` | CSS `oklch(L C H)` / `oklch(L C H / a)` (alpha omitted when opaque); modern browsers render this natively |
+
+```ts
+import { toOklchString } from '@bndynet/color-hub';
+
+toOklchString('#ff0000');   // 'oklch(0.628 0.2577 29.2339)'
+toOklchString('#ff000080'); // 'oklch(0.628 0.2577 29.2339 / 0.5)'
+```
 
 ### Perceptual distance (pairwise separation)
 
@@ -347,9 +401,35 @@ hub.switchTheme(getSystemColorScheme() === 'dark' ? 'brand-dark' : 'brand-light'
 |----------|-------------|
 | `deltaE76(color1, color2)` | CIELAB ΔE76 (Euclidean in L*a*b*); no extra deps |
 | `minDeltaE76ToExisting(candidate, existing[])` | Minimum ΔE76 from `candidate` to any color in `existing` |
-| `distinctColorPerceptual(existing[], options?)` | Sample hues until min ΔE76 ≥ `minDeltaE` (default ~23) or fallback |
+| `deltaEOK(color1, color2)` | **OKLab** ΔEOK (Euclidean in OKLab); more perceptually uniform than ΔE76. Note the **smaller scale** — black↔white ≈ `1.0`, not ~100 |
+| `minDeltaEOKToExisting(candidate, existing[])` | Minimum ΔEOK from `candidate` to any color in `existing` |
+| `distinctColorPerceptual(existing[], options?)` | Sample hues until the min distance ≥ `minDeltaE` or fallback. `options.metric`: `'de76'` (default, threshold ~23) or `'deOK'` (threshold ~0.08) |
 
-For **CIEDE2000** or **OkLCH**-based picking, use a library such as [culori](https://github.com/Evercoder/culori) in your app and pass the result into `palette` / `colorMap`. Publication-grade **colorblind-safe** palettes (e.g. Paul Tol) are best applied as explicit `palette` arrays rather than generated hues alone.
+For **CIEDE2000**-based picking, use a library such as [culori](https://github.com/Evercoder/culori) in your app and pass the result into `palette` / `colorMap`. Publication-grade **colorblind-safe** palettes (e.g. Paul Tol) are best applied as explicit `palette` arrays rather than generated hues alone.
+
+### Color-vision-deficiency (CVD) simulation
+
+Simulate how a color is perceived under **protanopia**, **deuteranopia**, or
+**tritanopia** (Machado et al. 2009 model). The intended use is a **palette
+robustness check**: simulate the colors you assigned to chart series, then run
+`deltaE76` / `deltaEOK` on the results to find pairs that collapse (become hard to
+tell apart) and adjust your palette.
+
+| Function | Description |
+|----------|-------------|
+| `simulate(color, type)` | `type`: `'protanopia' \| 'deuteranopia' \| 'tritanopia'` → simulated hex (alpha preserved) |
+| `simulateAll(color)` | `{ protanopia, deuteranopia, tritanopia }` |
+
+```ts
+import { simulate, simulateAll, deltaEOK } from '@bndynet/color-hub';
+
+simulate('#ff0000', 'deuteranopia'); // shifts toward olive/yellow
+
+// Are two series colors still distinguishable for deuteranopes?
+const a = '#d62728';
+const b = '#2ca02c';
+const safe = deltaEOK(simulate(a, 'deuteranopia'), simulate(b, 'deuteranopia')) > 0.1;
+```
 
 ### Random helpers
 
