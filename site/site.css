@@ -1,0 +1,172 @@
+/* Shared helper styles for the color-hub demo pages.
+   All colors come from vue-site theme variables so pages adapt to light/dark/sepia/ocean. */
+
+.lead {
+  color: var(--color-text-secondary);
+  font-size: 1.02rem;
+  line-height: 1.65;
+  margin: 0 0 1.25rem;
+  max-width: 70ch;
+}
+
+.demo {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-content-bg);
+  padding: 1.1rem 1.25rem 1.35rem;
+  margin: 0 0 1.5rem;
+}
+
+.demo > h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+
+.demo > .demo__desc {
+  margin: 0 0 1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.25rem;
+  align-items: flex-end;
+  margin-bottom: 1.1rem;
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.6rem;
+}
+
+.ramp {
+  display: flex;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.ramp > span {
+  flex: 1 1 0;
+  height: 56px;
+}
+
+.gradient-bar {
+  height: 64px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+}
+
+.field {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.field__label {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.field__row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.field__row input[type='color'] {
+  width: 38px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+}
+
+.field__hex {
+  width: 8.5em;
+  height: 34px;
+  padding: 0 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+}
+
+.field__range {
+  width: 180px;
+  accent-color: var(--color-link);
+}
+
+.field select {
+  height: 34px;
+  padding: 0 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.85rem;
+}
+
+.value-pill {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 6px;
+  background: var(--color-code-bg);
+  color: var(--color-code-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+}
+
+.note {
+  border-left: 3px solid var(--color-link);
+  background: var(--color-code-bg);
+  padding: 0.6rem 0.9rem;
+  border-radius: 0 8px 8px 0;
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+/* Plain code blocks inside Vue demo pages (markdown pages are highlighted by the framework). */
+.demo pre {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: var(--color-code-block-bg);
+  border: 1px solid var(--color-code-border);
+  overflow-x: auto;
+}
+
+.demo pre code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--color-code-text);
+  background: none;
+  padding: 0;
+}
+
+.result-line {
+  margin: 0.2rem 0;
+  font-size: 0.92rem;
+  color: var(--color-text-secondary);
+}
+
+.result-line strong {
+  color: var(--color-text);
+}

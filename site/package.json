@@ -1,0 +1,15 @@
+{
+  "name": "@bndynet/color-hub-site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Official documentation & interactive demo site for @bndynet/color-hub.",
+  "scripts": {
+    "dev": "vue-site dev",
+    "build": "vue-site build --base /color-hub/",
+    "preview": "vue-site preview"
+  },
+  "devDependencies": {
+    "@bndynet/vue-site": "^1.0.4"
+  }
+}

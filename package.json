@@ -79,14 +79,17 @@
   "scripts": {
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
-    "start": "npm run build && concurrently \"tsup --watch\" \"npm run serve\"",
-    "serve": "http-server -p 3000 -o /site",
+    "start": "npm --prefix site install && npm --prefix site run dev",
+    "site:install": "npm --prefix site install",
+    "site:build": "npm --prefix site install && npm --prefix site run build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "tsup",
+    "postbuild": "npm run site:build",
     "clean": "rm -rf dist",
-    "prepublishOnly": "npm run clean && npm run lint && npm run typecheck && npm run test && npm run build"
+    "postinstall": "node -e \"const fs=require('fs');if(fs.existsSync('site/package.json'))require('child_process').execSync('npm --prefix site install',{stdio:'inherit'})\"",
+    "prepublishOnly": "npm run clean && npm run lint && npm run typecheck && npm run test && tsup"
   },
   "publishConfig": {
     "access": "public"

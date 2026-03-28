@@ -455,14 +455,15 @@ import {
 ## Development
 
 ```bash
-npm install
-npm run build       # writes dist/ (ESM, CJS, IIFE, declarations)
-npm run typecheck   # tsc
-npm run test        # vitest
+npm install          # install dependencies
+npm run build        # writes dist/ (ESM, CJS, IIFE, declarations)
+npm run typecheck    # tsc
+npm run test         # vitest
 npm run lint
 ```
 
-If configured, `npm start` builds and serves the demo under `site/`.
+A local docs site with live demos lives under [`site/`](./site); run it with
+`npm start`.
 
 ## License
 
