@@ -5,6 +5,8 @@ export enum State {
   HOVER = 'hover',
   ACTIVE = 'active',
   DISABLED = 'disabled',
+  FOCUS = 'focus',
+  SELECTED = 'selected',
 }
 
 export interface StateColors {
@@ -12,6 +14,8 @@ export interface StateColors {
   hover: string;
   active: string;
   disabled: string;
+  focus: string;
+  selected: string;
   [state: string]: string;
 }
 
@@ -55,14 +59,16 @@ export type ColorTheme<T = undefined> = {
 };
 
 /**
- * Optional per-state overrides for hover / active / disabled.
+ * Optional per-state overrides for hover / active / disabled / focus / selected.
  * Each function receives the base color and the `ColorHub` instance (use `hub.getCurrentTheme()` for the active theme).
- * Omitted states use the built-in defaults (lighten 0.05, darken 0.1, alpha 0.4).
+ * Omitted states use the built-in, `colorMode`-aware defaults (see `ColorHub`).
  */
 export type StateRecipe<T = undefined> = {
   hover?: (baseColor: string, hub: ColorHub<T>) => string;
   active?: (baseColor: string, hub: ColorHub<T>) => string;
   disabled?: (baseColor: string, hub: ColorHub<T>) => string;
+  focus?: (baseColor: string, hub: ColorHub<T>) => string;
+  selected?: (baseColor: string, hub: ColorHub<T>) => string;
   [state: string]: ((baseColor: string, hub: ColorHub<T>) => string) | undefined;
 };
 

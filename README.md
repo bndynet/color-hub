@@ -98,6 +98,9 @@ The constructor takes an array of **`ColorTheme`** objects and an optional secon
 - **`appendPalette(name, palette)`**  
   Appends a new theme with only a name and palette (empty `colorMap`).
 
+- **`onThemeChange(listener)`**  
+  Subscribe to theme switches; the listener receives the new active theme after each `switchTheme`. Returns an unsubscribe function. (See `bindThemeToDOM` under **Runtime**.)
+
 ### `ColorTheme<T>`
 
 | Field | Description |
@@ -107,7 +110,7 @@ The constructor takes an array of **`ColorTheme`** objects and an optional secon
 | `palette?` | List of colors assigned in order to new keys |
 | `colorMap?` | Established `key → color` assignments |
 | `colors?` | Optional strongly typed named colors (`T`); read these in your app; `ColorHub` uses `palette` / `colorMap` for dynamic key assignment |
-| `stateRecipe?` | Optional per-state overrides for hover / active / disabled (see **StateRecipe**); overrides hub-level `options.stateRecipe` per field |
+| `stateRecipe?` | Optional per-state overrides for hover / active / disabled / focus / selected (see **StateRecipe**); overrides hub-level `options.stateRecipe` per field |
 
 Generic example:
 
@@ -138,11 +141,13 @@ Each object returned by `getColors` includes:
 | Property | Meaning |
 |----------|---------|
 | `default` | Base color |
-| `hover` | Slightly lightened vs base |
-| `active` | Slightly darkened vs base |
+| `hover` | Lightened vs base (more in dark mode) |
+| `active` | Darkened vs base |
 | `disabled` | Same color with alpha **0.4** |
+| `focus` | Same color with alpha **0.5** (focus ring/highlight) |
+| `selected` | Subtle fill: lightened in light mode, darkened in dark mode |
 
-These are computed with `lighten`, `darken`, and `alpha` (see Utilities), unless you supply a **StateRecipe**.
+Defaults are **`colorMode`-aware** (they read `getCurrentTheme().colorMode`): light mode uses `lighten 0.05` / `darken 0.1`, dark mode `lighten 0.1` / `darken 0.08`. All are computed with `lighten`, `darken`, and `alpha` (see Utilities) unless you supply a **StateRecipe** (which also accepts `focus` / `selected` and any custom state key).
 
 ### `StateRecipe` and `ColorHubOptions`
 
@@ -240,6 +245,42 @@ blue[500]; // ≈ '#2563eb' (the base)
 blue[900]; // deep shade
 ```
 
+### Color harmony
+
+| Function | Description |
+|----------|-------------|
+| `harmony(base, scheme, options?)` | Dispatch by `scheme` (see below). `options`: `{ angle?, count? }` |
+| `complementary(base)` | `[base, +180°]` |
+| `analogous(base, angle?)` | `[base, +angle, -angle]` (default `30`) |
+| `triadic(base)` | three colors 120° apart |
+| `tetradic(base)` | rectangle: `[base, +60°, +180°, +240°]` |
+| `splitComplementary(base)` | `[base, +150°, +210°]` |
+| `monochromatic(base, count?)` | `count` shades of one hue from `generateScale` (default `5`, clamped 2–11) |
+
+```ts
+import { harmony, triadic } from '@bndynet/color-hub';
+
+triadic('#2563eb');                 // ['#2563eb', '#eb2563', '#63eb25'] (approx)
+harmony('#2563eb', 'analogous', { angle: 45 });
+```
+
+### Theme generation
+
+| Function | Description |
+|----------|-------------|
+| `createThemeFromColor(base, options?)` | From one brand color, build `{ light, dark }` themes. The base anchors `palette[0]` (light); other colors spread by the golden angle. `options`: `{ name?, paletteSize?, saturation? }`. Semantic tokens are left to you. |
+| `deriveDarkTheme(theme)` | Flip `colorMode` to `dark`, mirror named `colors` lightness (`invert`), and lift palette colors for dark backgrounds. Clones `colorMap`. |
+
+```ts
+import { ColorHub, createThemeFromColor } from '@bndynet/color-hub';
+
+const { light, dark } = createThemeFromColor('#2563eb', {
+  name: 'brand',
+  paletteSize: 8,
+});
+const hub = new ColorHub([light, dark]); // 'brand-light' / 'brand-dark'
+```
+
 ### CSS variables / theme output
 
 | Function | Description |
@@ -267,6 +308,30 @@ toCSSString(darkTheme, {
 //   --ch-palette-0: #60a5fa;
 //   --ch-palette-1: #2dd4bf;
 // }
+```
+
+### Runtime (browser)
+
+Helpers to apply themes to the DOM and react to the system color scheme. All
+feature-detect their globals, so importing them is safe in Node / SSR (they become
+no-ops there).
+
+| Function | Description |
+|----------|-------------|
+| `applyTheme(theme, options?)` | Write the theme's CSS variables on an element (default `document.documentElement`) and set `data-theme` to the theme name. `options` extend `toCSSVariables` with `{ target?, attribute? }` (`attribute: null` to skip) |
+| `getSystemColorScheme()` | `'light'` / `'dark'` from `prefers-color-scheme` (`'light'` when unknown) |
+| `watchSystemColorScheme(cb)` | Subscribe to OS scheme changes; returns an unsubscribe function |
+| `persistThemeName(name, key?)` | Save the active theme name to `localStorage` (default key `color-hub-theme`) |
+| `loadThemeName(key?)` | Read a persisted theme name, or `null` |
+| `bindThemeToDOM(hub, options?)` | Apply the hub's current theme now and on every `switchTheme`; `options.persist` saves the name. Returns an unsubscribe function |
+
+```ts
+import { ColorHub, bindThemeToDOM, getSystemColorScheme } from '@bndynet/color-hub';
+
+const hub = new ColorHub([light, dark]);
+const unbind = bindThemeToDOM(hub, { persist: true });
+hub.switchTheme(getSystemColorScheme() === 'dark' ? 'brand-dark' : 'brand-light');
+// later: unbind();
 ```
 
 ### Parsing and validation

@@ -26,6 +26,7 @@ export class ColorHub<T = undefined> {
   private currentTheme: ColorTheme<T>;
   private indexUsedInPalette = 0;
   private hubStateRecipe: StateRecipe<T> | undefined;
+  private themeChangeListeners = new Set<(theme: ColorTheme<T>) => void>();
   private assignment: KeyAssignment;
   private paletteExhaustion: PaletteExhaustion;
   private perceptualMinDeltaE: number;
@@ -70,11 +71,29 @@ export class ColorHub<T = undefined> {
     }
     this.currentTheme = theme ?? this.themes[0];
     this.indexUsedInPalette = 0;
+    this.emitThemeChange();
   }
 
   /** Active theme object (same reference the hub mutates for `colorMap` / assignments). */
   getCurrentTheme(): ColorTheme<T> {
     return this.currentTheme;
+  }
+
+  /**
+   * Subscribe to theme switches. The listener is called with the new active theme
+   * after each {@link switchTheme}. Returns an unsubscribe function.
+   */
+  onThemeChange(listener: (theme: ColorTheme<T>) => void): () => void {
+    this.themeChangeListeners.add(listener);
+    return () => {
+      this.themeChangeListeners.delete(listener);
+    };
+  }
+
+  private emitThemeChange(): void {
+    for (const listener of this.themeChangeListeners) {
+      listener(this.currentTheme);
+    }
   }
 
   appendTheme(theme: ColorTheme<T>): void {
@@ -190,21 +209,34 @@ export class ColorHub<T = undefined> {
 
   private getStateColors(color: string): StateColors {
     const r = this.getMergedStateRecipe();
+    const isDarkMode = this.currentTheme.colorMode === 'dark';
     const result: StateColors = {
       [State.DEFAULT]: color,
-      [State.HOVER]: r.hover ? r.hover(color, this) : lighten(color, 0.05),
-      [State.ACTIVE]: r.active ? r.active(color, this) : darken(color, 0.1),
+      [State.HOVER]: r.hover
+        ? r.hover(color, this)
+        : lighten(color, isDarkMode ? 0.1 : 0.05),
+      [State.ACTIVE]: r.active
+        ? r.active(color, this)
+        : darken(color, isDarkMode ? 0.08 : 0.1),
       [State.DISABLED]: r.disabled
         ? r.disabled(color, this)
         : alpha(color, 0.4),
+      [State.FOCUS]: r.focus ? r.focus(color, this) : alpha(color, 0.5),
+      [State.SELECTED]: r.selected
+        ? r.selected(color, this)
+        : isDarkMode
+          ? darken(color, 0.3)
+          : lighten(color, 0.3),
     };
+    const builtIn = new Set<string>([
+      State.HOVER,
+      State.ACTIVE,
+      State.DISABLED,
+      State.FOCUS,
+      State.SELECTED,
+    ]);
     for (const key of Object.keys(r)) {
-      if (
-        key !== State.HOVER &&
-        key !== State.ACTIVE &&
-        key !== State.DISABLED &&
-        r[key]
-      ) {
+      if (!builtIn.has(key) && r[key]) {
         result[key] = r[key]!(color, this);
       }
     }

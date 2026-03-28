@@ -280,6 +280,45 @@ describe('ColorHub', () => {
     it('sets disabled alpha to 0.4', () => {
       expect(colord(hub.getColors('k1').disabled).alpha()).toBeCloseTo(0.4, 1);
     });
+
+    it('exposes focus and selected states', () => {
+      const c = hub.getColors('k1');
+      expect(c.focus).toMatch(/^#[0-9a-f]{6,8}$/i);
+      expect(c.selected).toMatch(/^#[0-9a-f]{6,8}$/i);
+      expect(colord(c.focus).alpha()).toBeCloseTo(0.5, 1);
+    });
+  });
+
+  describe('colorMode-aware state defaults', () => {
+    it('lightens selected in light mode and darkens it in dark mode', () => {
+      const base = '#3366cc';
+      const lightHub = new ColorHub([
+        { name: 'l', colorMode: 'light', palette: [base], colorMap: {} },
+      ]);
+      const darkHub = new ColorHub([
+        { name: 'd', colorMode: 'dark', palette: [base], colorMap: {} },
+      ]);
+      lightHub.switchTheme('l');
+      darkHub.switchTheme('d');
+      expect(colord(lightHub.getColors('x').selected).brightness()).toBeGreaterThan(
+        colord(base).brightness(),
+      );
+      expect(colord(darkHub.getColors('x').selected).brightness()).toBeLessThan(
+        colord(base).brightness(),
+      );
+    });
+  });
+
+  describe('onThemeChange', () => {
+    it('notifies subscribers on switch and supports unsubscribe', () => {
+      const seen: string[] = [];
+      const unsub = hub.onThemeChange((t) => seen.push(t.name));
+      hub.switchTheme('light');
+      hub.switchTheme('dark');
+      unsub();
+      hub.switchTheme('light');
+      expect(seen).toEqual(['light', 'dark']);
+    });
   });
 
 
