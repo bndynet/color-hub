@@ -85,10 +85,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "tsup",
+    "build": "tsup && npm run site:build",
     "postbuild": "npm run site:build",
     "clean": "rm -rf dist",
-    "postinstall": "node -e \"const fs=require('fs');if(fs.existsSync('site/package.json'))require('child_process').execSync('npm --prefix site install',{stdio:'inherit'})\"",
+    "postinstall": "npm run site:install",
     "prepublishOnly": "npm run clean && npm run lint && npm run typecheck && npm run test && tsup"
   },
   "publishConfig": {
