@@ -1,6 +1,6 @@
 {
   "name": "@bndynet/color-hub",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Multi-theme palettes, key-to-color assignment for charts and UI, plus default/hover/active/disabled state colors—TypeScript-first, built on colord.",
   "type": "module",
   "author": "Bendy Zhang",
